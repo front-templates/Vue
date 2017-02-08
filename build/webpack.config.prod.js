@@ -6,85 +6,142 @@ module.exports = function(require) {
 	var webpack = require('webpack');
 	var ExtractTextPlugin = require('extract-text-webpack-plugin');
 	var HtmlWebpackPlugin = require('html-webpack-plugin');
+	var PurifyCSSPlugin = require('purifycss-webpack');
+	var glob = require('glob');
+	var babelOptions = {
+		presets: [
+			[require.resolve('babel-preset-env'), {
+				targets: {
+					browsers: ['ie>8']
+				},
+				modules: false,
+				debug: false
+			}]
+		],
+
+		compact: true
+	};
 
 	return {
-		entry: [
-			path.resolve(__dirname, '../application/main.js')
-		],
+		entry: {
+			application: [path.resolve(__dirname, '../application/main.js')]
+		},
 
 		output: {
 			path: path.resolve(__dirname, '../dist'),
-			filename: 'js/application-[hash].js'
+			filename: 'js/[name]-[chunkhash].js'
 		},
 
 		module: {
-			loaders: [
+			rules: [
 				{
 					test: /\.vue$/i,
 					loader: 'vue-loader',
-					exclude: /node_modules/
+					options: {
+						loaders: {
+							js: 'babel-loader?' + JSON.stringify(babelOptions),
+							css: ExtractTextPlugin.extract({
+								use: {
+									loader: 'css-loader',
+									options: {
+										sourceMap: true
+									}
+								},
+								publicPath: '../'
+							})
+						}
+					}
+				},
+				{
+					test: /\.tpl$/i,
+					loader: 'handlebars-template-loader'
+				},
+				{
+					test: /\.(js|vue)$/i,
+					loader: 'eslint-loader',
+					enforce: 'pre',
+					exclude: /node_modules/,
+					options: {
+						fix: true
+					}
 				},
 				{
 					test: /\.js$/i,
-					loaders: ['babel-loader', 'eslint-loader'],
+					loader: 'babel-loader?' + JSON.stringify(babelOptions),
 					exclude: /node_modules/
 				},
 				{
 					test: /\.css$/i,
-					loader: ExtractTextPlugin.extract(['css-loader'], { publicPath: '../../' })
+					loader: ExtractTextPlugin.extract({
+						use: {
+							loader: 'css-loader',
+							options: {
+								sourceMap: true
+							}
+						},
+						publicPath: '../'
+					})
 				},
 				{
 					test: /\.(eot|woff2?|ttf|svg|png|jpg|gif|bmp)(\?.*)*$/i,
 					loader: 'file-loader',
-					query: {
-						name: 'assets/img/[name].[ext]'
+					options: {
+						name: 'img/[name]-[hash].[ext]'
 					}
-				},
-				{
-					test: /\.json$/,
-					loader: 'json-loader',
-					exclude: /node_modules/
 				}
 			]
 		},
 
-		babel: {
-			presets: [require.resolve('babel-preset-es2015')],
-			plugins: [require.resolve('babel-plugin-transform-runtime')],
-			compact: true
-		},
-
 		resolve: {
-			root: [
+			modules: [
 				path.resolve(__dirname, '../'),
 				path.resolve(__dirname, '../application'),
 				path.resolve(__dirname, '../node_modules')
 			],
-			extensions: ['', '.js', '.vue']
+			extensions: ['.js', '.vue', '.tpl']
 		},
 
 		plugins: [
 			new webpack.DefinePlugin({
-				'process.env': {
-					NODE_ENV: JSON.stringify('production'),
-					BABEL_ENV: JSON.stringify('production')
+				'process.env.NODE_ENV': JSON.stringify('production')
+			}),
+			new webpack.optimize.CommonsChunkPlugin({
+				name: 'libs',
+				minChunks: function (module) {
+					return module.context && module.context.indexOf('node_modules') !== -1;
 				}
 			}),
-			new webpack.optimize.UglifyJsPlugin({
-				compress: { warnings: false },
-				output: { comments: false }
+			new webpack.optimize.CommonsChunkPlugin({
+				name: 'manifest',
+				minChunks: Infinity
 			}),
-			new webpack.BannerPlugin([
-				pkg.name +  ' ' + pkg.version + ' - ' + pkg.description,
-				'\nDevelopers:\n',
-				pkg.authors.map(function(a) { return '\t' + a;}).join('\n')
-			].join('\n'), { entryOnly: true }),
-			new ExtractTextPlugin('assets/css/application-[hash].css', { allChunks: true }),
+			new webpack.optimize.UglifyJsPlugin({
+				output: { comments: false },
+				sourceMap: true
+			}),
+			new ExtractTextPlugin({
+				filename: 'css/application-[chunkhash].css',
+				allChunks: true
+			}),
+			new PurifyCSSPlugin({
+				paths: glob.sync(path.join(__dirname, '../**/*.{htm,html,vue,tpl}')),
+				minimize: true
+			}),
+			new webpack.BannerPlugin({
+				banner: [
+					pkg.name +  ' ' + pkg.version + ' - ' + pkg.description,
+					'\nDevelopers:\n',
+					pkg.authors.map(function(a) { return '\t\t' + a;}).join('\n')
+				].join('\n'),
+				entryOnly: true
+			}),
 			new HtmlWebpackPlugin({
 				filename: 'index.html',
 				template: 'index.html',
 				favicon: 'favicon.ico'
 			})
-		]
+		],
+
+		devtool: '#source-map'
 	};
 };
