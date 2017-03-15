@@ -12,9 +12,10 @@ module.exports = function(require) {
 		presets: [
 			[require.resolve('babel-preset-env'), {
 				targets: {
-					browsers: ['ie>8']
+					browsers: ['ie >= 9']
 				},
 				modules: false,
+				useBuiltIns: true,
 				debug: false
 			}]
 		],
@@ -51,10 +52,6 @@ module.exports = function(require) {
 							})
 						}
 					}
-				},
-				{
-					test: /\.tpl$/i,
-					loader: 'handlebars-template-loader'
 				},
 				{
 					test: /\.(js|vue)$/i,
@@ -98,12 +95,16 @@ module.exports = function(require) {
 				path.resolve(__dirname, '../application'),
 				path.resolve(__dirname, '../node_modules')
 			],
-			extensions: ['.js', '.vue', '.tpl']
+			extensions: ['.js', '.vue']
 		},
 
 		plugins: [
 			new webpack.DefinePlugin({
 				'process.env.NODE_ENV': JSON.stringify('production')
+			}),
+			new webpack.ProvidePlugin({
+				$: 'jquery',
+				jQuery: 'jquery'
 			}),
 			new webpack.optimize.CommonsChunkPlugin({
 				name: 'libs',
@@ -124,7 +125,7 @@ module.exports = function(require) {
 				allChunks: true
 			}),
 			new PurifyCSSPlugin({
-				paths: glob.sync(path.join(__dirname, '../**/*.{htm,html,vue,tpl}')),
+				paths: glob.sync(path.join(__dirname, '../**/*.{htm,html,vue}')),
 				minimize: true
 			}),
 			new webpack.BannerPlugin({
