@@ -36,7 +36,12 @@ module.exports = function (require) {
 			rules: [
 				{
 					test: /\.vue$/i,
-					loader: 'vue-loader'
+					loader: 'vue-loader',
+					options: {
+						loaders: {
+							js: 'babel-loader?' + JSON.stringify(babelOptions)
+						}
+					}
 				},
 				{
 					test: /\.js$/i,
