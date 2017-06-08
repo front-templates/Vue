@@ -31,7 +31,8 @@ module.exports = require => {
 
 		output: {
 			path: path.resolve(__dirname, '../dist'),
-			filename: 'js/[name]-[chunkhash].js'
+			filename: 'js/[name]-[chunkhash].js',
+			chunkFilename: 'js/[name]-[chunkhash].js'
 		},
 
 		module: {
@@ -98,6 +99,11 @@ module.exports = require => {
 			new webpack.ProvidePlugin({
 				$: 'jquery',
 				jQuery: 'jquery'
+			}),
+			new webpack.optimize.CommonsChunkPlugin({
+				name: 'application',
+				children: true,
+				minChunks: 2
 			}),
 			new webpack.optimize.CommonsChunkPlugin({
 				name: 'libs',
