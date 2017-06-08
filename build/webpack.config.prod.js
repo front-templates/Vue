@@ -1,27 +1,28 @@
-var pkg = require('../package.json');
+let pkg = require('../package.json');
 
 // the 'require' parameter is in the context of front-cli, not the application
-module.exports = function(require) {
-	var path = require('path');
-	var webpack = require('webpack');
-	var ExtractTextPlugin = require('extract-text-webpack-plugin');
-	var HtmlWebpackPlugin = require('html-webpack-plugin');
-	var PurifyCSSPlugin = require('purifycss-webpack');
-	var glob = require('glob');
-	var babelOptions = {
+module.exports = require => {
+	let path = require('path');
+	let webpack = require('webpack');
+	let ExtractTextPlugin = require('extract-text-webpack-plugin');
+	let HtmlWebpackPlugin = require('html-webpack-plugin');
+	let babelOptions = {
 		presets: [
 			[require.resolve('babel-preset-env'), {
 				targets: {
-					browsers: ['ie >= 9']
+					browsers: ['ie >= 11']
 				},
 				modules: false,
 				useBuiltIns: true,
 				debug: false
 			}]
-		],
-
-		compact: true
+		]
 	};
+
+	let extractTextPlugin = new ExtractTextPlugin({
+		filename: 'css/application-[chunkhash].css',
+		allChunks: true
+	});
 
 	return {
 		entry: {
@@ -39,17 +40,9 @@ module.exports = function(require) {
 					test: /\.vue$/i,
 					loader: 'vue-loader',
 					options: {
+						extractCSS: extractTextPlugin,
 						loaders: {
-							js: 'babel-loader?' + JSON.stringify(babelOptions),
-							css: ExtractTextPlugin.extract({
-								use: {
-									loader: 'css-loader',
-									options: {
-										sourceMap: true
-									}
-								},
-								publicPath: '../'
-							})
+							js: 'babel-loader?' + JSON.stringify(babelOptions)
 						}
 					}
 				},
@@ -108,8 +101,8 @@ module.exports = function(require) {
 			}),
 			new webpack.optimize.CommonsChunkPlugin({
 				name: 'libs',
-				minChunks: function (module) {
-					return module.context && module.context.indexOf('node_modules') !== -1;
+				minChunks({ context }) {
+					return context && context.indexOf('node_modules') >= 0;
 				}
 			}),
 			new webpack.optimize.CommonsChunkPlugin({
@@ -120,22 +113,14 @@ module.exports = function(require) {
 				output: { comments: false },
 				sourceMap: true
 			}),
-			new ExtractTextPlugin({
-				filename: 'css/application-[chunkhash].css',
-				allChunks: true
-			}),
-			new PurifyCSSPlugin({
-				paths: glob.sync(path.join(__dirname, '../**/*.{htm,html,vue}')),
-				moduleExtensions: ['.htm', '.html', '.vue', '.js'],
-				minimize: true
-			}),
+			extractTextPlugin,
 			new webpack.BannerPlugin({
 				banner: [
-					pkg.name +  ' ' + pkg.version + ' - ' + pkg.description,
+					`${pkg.name} ${pkg.version} - ${pkg.description}`,
 					'\nDevelopers:\n',
-					pkg.authors.map(function(a) { return '\t\t' + a;}).join('\n')
+					pkg.authors.map(a => `\t\t${a}`).join('\n')
 				].join('\n'),
-				entryOnly: true
+				entryOnly: false
 			}),
 			new HtmlWebpackPlugin({
 				filename: 'index.html',
