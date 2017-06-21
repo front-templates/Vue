@@ -43,7 +43,8 @@ module.exports = require => {
 					options: {
 						extractCSS: extractTextPlugin,
 						loaders: {
-							js: 'babel-loader?' + JSON.stringify(babelOptions)
+							js: 'babel-loader?' + JSON.stringify(babelOptions),
+							css: 'vue-style-loader!css-loader?minimize'
 						}
 					}
 				},
@@ -67,7 +68,8 @@ module.exports = require => {
 						use: {
 							loader: 'css-loader',
 							options: {
-								sourceMap: true
+								sourceMap: true,
+								minimize: true
 							}
 						},
 						publicPath: '../'
