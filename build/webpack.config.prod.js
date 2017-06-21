@@ -19,11 +19,6 @@ module.exports = require => {
 		]
 	};
 
-	let extractTextPlugin = new ExtractTextPlugin({
-		filename: 'css/application-[chunkhash].css',
-		allChunks: true
-	});
-
 	return {
 		entry: {
 			application: [path.resolve(__dirname, '../application/main.js')]
@@ -41,10 +36,18 @@ module.exports = require => {
 					test: /\.vue$/i,
 					loader: 'vue-loader',
 					options: {
-						extractCSS: extractTextPlugin,
 						loaders: {
 							js: 'babel-loader?' + JSON.stringify(babelOptions),
-							css: 'vue-style-loader!css-loader?minimize'
+							css: ExtractTextPlugin.extract({
+								use: {
+									loader: 'css-loader',
+									options: {
+										sourceMap: true,
+										minimize: true
+									}
+								},
+								publicPath: '../'
+							})
 						}
 					}
 				},
@@ -121,7 +124,10 @@ module.exports = require => {
 				output: { comments: false },
 				sourceMap: true
 			}),
-			extractTextPlugin,
+			new ExtractTextPlugin({
+				filename: 'css/application-[chunkhash].css',
+				allChunks: true
+			}),
 			new webpack.BannerPlugin({
 				banner: [
 					`${pkg.name} ${pkg.version} - ${pkg.description}`,
