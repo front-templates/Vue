@@ -3,6 +3,7 @@ let pkg = require('../package.json');
 // the 'require' parameter is in the context of front-cli, not the application
 module.exports = require => {
 	let path = require('path');
+	let fs = require('fs-extra');
 	let webpack = require('webpack');
 	let ExtractTextPlugin = require('extract-text-webpack-plugin');
 	let HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -18,6 +19,8 @@ module.exports = require => {
 			}]
 		]
 	};
+
+	fs.copySync(path.resolve(__dirname, '../config.js'), path.resolve(__dirname, '../dist/config.js'));
 
 	return {
 		entry: {
